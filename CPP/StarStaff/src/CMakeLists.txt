@@ -1,8 +1,3 @@
-#set(Boost_USE_STATIC_LIBS ON)
-#set(Boost_USE_MULTITHREADED ON)
-#find_package(Boost)
-
-
 add_subdirectory(moving_average)
 add_subdirectory(sample_variance)
 
