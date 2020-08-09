@@ -11,3 +11,5 @@ add_subdirectory(question_on_algorithms)
 add_subdirectory(common_cpp)
 add_subdirectory(StarStaff)
 add_subdirectory(kasper)
+
+add_executable(poligon poligon.cpp)

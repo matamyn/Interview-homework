@@ -1,10 +1,11 @@
-//
-// Created by timofey on 09.08.2020.
-//
-
-#ifndef CPP_HOMEWORK_POLIGON_H
-#define CPP_HOMEWORK_POLIGON_H
-
-class poligon {};
-
-#endif // CPP_HOMEWORK_POLIGON_H
+#pragma once
+#include <iostream>
+using namespace std;
+class A {
+public:
+  A() { cout << "constructor A" << endl; }
+};
+class B : public A {
+public:
+  B() { cout << "constructor B" << endl; }
+};
