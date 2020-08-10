@@ -1,13 +1,3 @@
-/*
-    Задание
-
-    Указать те ошибки в коде, которые приводят к неправильной работе программы.
-   При этом развернуто и подробно описать, в чем каждая из таких ошибок
-   заключается, как проявляется, к каким именно проблемам приводит. Исправлять
-   найденные ошибки не следует.  Про артефакты, которые не приводят к
-   неправильной работе программы, писать не следует -- за спам снимаем баллы.
-*/
-
 #include <cstdio>
 #include <exception>
 #include <fstream>
@@ -18,7 +8,7 @@
 #include <string>
 #include <thread>
 
-namespace TASK6044 {
+namespace TPROGER {
 typedef std::runtime_error Exception;
 
 //! throws an OsError exception based on errno if bResult is zero
@@ -32,8 +22,8 @@ void Check_errno(bool bResult, const char *file, int line) {
 };
 
 //! check last error and throws an OsError exception if res is zero
-#define TASK6044_CHK_ERRNO(res)                                                \
-  TASK6044::Check_errno(!!(res), __FILE__, __LINE__)
+#define TPROGER_CHK_ERRNO(res)                                                \
+  TPROGER::Check_errno(!!(res), __FILE__, __LINE__)
 
 //! throws an OsError exception based on errno if bResult is zero
 void Assertion(bool bResult, const char *szText, const char *file, int line) {
@@ -45,8 +35,8 @@ void Assertion(bool bResult, const char *szText, const char *file, int line) {
 };
 
 //! throws an exception is condition is false
-#define TASK6044_ASSERTION(res)                                                \
-  TASK6044::Assertion(!!(res), #res, __FILE__, __LINE__)
+#define TPROGER_ASSERTION(res)                                                \
+  TPROGER::Assertion(!!(res), #res, __FILE__, __LINE__)
 
 //! Recursive synchronization object
 typedef std::recursive_mutex CritSec;
@@ -80,9 +70,9 @@ private:
 
   void Destroy() {
     if (m_pThread) {
-      TASK6044_ASSERTION(m_pThread->joinable());
+      TPROGER_ASSERTION(m_pThread->joinable());
       m_pThread->join();
-      TASK6044_ASSERTION(!m_pThread->joinable());
+      TPROGER_ASSERTION(!m_pThread->joinable());
       m_pThread = nullptr;
     };
   };
@@ -92,8 +82,8 @@ private:
       static_cast<T *>(this)->Call();
       if (this->m_pControl)
         this->m_pControl->DoCall();
-    } catch (const TASK6044::Exception &excpt) {
-      std::cerr << "TASK6044::Exception occured: " << excpt.what();
+    } catch (const TPROGER::Exception &excpt) {
+      std::cerr << "TPROGER::Exception occured: " << excpt.what();
     } catch (const std::exception &excpt) {
       std::cerr << "Unexpected exception: " << excpt.what();
     };
@@ -158,7 +148,7 @@ class LoggerImpl : public LoggerBase {
 public:
   LoggerImpl(CritSec &oRM) : m_pOutput(nullptr), m_oRM(oRM) {
     m_pOutput = fopen("result.log", "w");
-    TASK6044_CHK_ERRNO(m_pOutput);
+    TPROGER_CHK_ERRNO(m_pOutput);
   };
 
   ~LoggerImpl() {
@@ -172,7 +162,7 @@ public:
   virtual void LogLine(const char *szOut) {
     AutoCritSec arm(m_oRM);
     if (m_pOutput) {
-      TASK6044_CHK_ERRNO(EOF != fputs(szOut, m_pOutput));
+      TPROGER_CHK_ERRNO(EOF != fputs(szOut, m_pOutput));
     };
   };
 
@@ -193,7 +183,6 @@ public:
   void Start() {
     AutoCritSec arm(m_oRM);
     m_pAsyncCall1.reset(new AsyncCall_1(this, this));
-    m_pAsyncCall2.reset(new AsyncCall_0(this, this));
   };
 
 protected:
@@ -212,13 +201,13 @@ protected:
   std::unique_ptr<AsyncCall_0> m_pAsyncCall2;
   FILE *m_pOutput;
 };
-}; // namespace TASK6044
+}
 
 int main() {
   try {
-    TASK6044::TheFactoryImpl oApp;
-  } catch (const TASK6044::Exception &excpt) {
-    std::cerr << "TASK6044::Exception occured: " << excpt.what();
+    TPROGER::TheFactoryImpl oApp;
+  } catch (const TPROGER::Exception &excpt) {
+    std::cerr << "TPROGER::Exception occured: " << excpt.what();
     return 1;
   } catch (const std::exception &excpt) {
     std::cerr << "Unexpected exception: " << excpt.what();
