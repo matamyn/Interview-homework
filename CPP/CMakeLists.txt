@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(CPP_homework)
+SET(CMAKE_CXX_FLAGS -pthread)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
