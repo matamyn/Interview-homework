@@ -1,8 +1,7 @@
 #include "poligon.h"
 
+int main() {
+B b;
 
-
-int main(){
-  B* b;
   return 0;
 }
