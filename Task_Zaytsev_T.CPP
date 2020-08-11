@@ -89,6 +89,14 @@ private:
 
   void thread_proc() {
     try {
+      //приведение типа к AsyncCall_*, проблема восходящего преобразования,
+      //может возникать непроделенное поведение в runtime.
+
+      // static_cast имеет семантику move, в следствии чего будет вызван
+      //деструктор класса TheFactoryImpl, в следствии чего будут вызваны
+      //деструкторы наследуемых классов и композитных объектов, в частности
+      //деструктор AsyncCall_*, который обнулит указатель m_pOutput
+      //из за чего произойдет SIGSEGV на обращении к указателю в методе Call.
       static_cast<T *>(this)->Call();
       if (this->m_pControl)
         this->m_pControl->DoCall();
@@ -170,6 +178,13 @@ public:
 
   // LoggerBase
   virtual void LogLine(const char *szOut) {
+    //Деструктор класса TheFactoryImpl уже вызвал lock_guard с объектом CritSec,
+    //который в данный момент находится в ожидании завершения.
+    //Из за передачи CritSec по ссылке в новый lock_guard, произойдет
+    //неотслеживаемое поведение
+
+    //Деструктор AsyncCallImplT не дождется завершения потоков на.join() и уйдет
+    //в вечное ожидание
     AutoCritSec arm(m_oRM);
     if (m_pOutput) {
       TASK6044_CHK_ERRNO(EOF != fputs(szOut, m_pOutput));
