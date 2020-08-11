@@ -22,7 +22,7 @@ namespace TASK6044 {
 typedef std::runtime_error Exception;
 
 //! throws an OsError exception based on errno if bResult is zero
-void Check_errno(bool bResult, const char* file, int line) {
+void Check_errno(bool bResult, const char *file, int line) {
   if (!bResult) {
     fprintf(stderr, "An error %d occurred", errno);
     std::ostringstream os;
@@ -32,11 +32,11 @@ void Check_errno(bool bResult, const char* file, int line) {
 };
 
 //! check last error and throws an OsError exception if res is zero
-#define TASK6044_CHK_ERRNO(res) \
+#define TASK6044_CHK_ERRNO(res)                                                \
   TASK6044::Check_errno(!!(res), __FILE__, __LINE__)
 
 //! throws an OsError exception based on errno if bResult is zero
-void Assertion(bool bResult, const char* szText, const char* file, int line) {
+void Assertion(bool bResult, const char *szText, const char *file, int line) {
   if (!bResult) {
     std::ostringstream os;
     os << "Assertion " << szText << " failed at " << file << "@" << line;
@@ -45,7 +45,7 @@ void Assertion(bool bResult, const char* szText, const char* file, int line) {
 };
 
 //! throws an exception is condition is false
-#define TASK6044_ASSERTION(res) \
+#define TASK6044_ASSERTION(res)                                                \
   TASK6044::Assertion(!!(res), #res, __FILE__, __LINE__)
 
 //! Recursive synchronization object
@@ -64,13 +64,12 @@ public:
 
     \tparam class that must support method 'void TT::Call()'
 */
-template <class T>
-class AsyncCallImplT {
-  AsyncCallImplT& operator=(const AsyncCallImplT&);
-  AsyncCallImplT(const AsyncCallImplT&);
+template <class T> class AsyncCallImplT {
+  AsyncCallImplT &operator=(const AsyncCallImplT &);
+  AsyncCallImplT(const AsyncCallImplT &);
 
 public:
-  AsyncCallImplT(AsyncCallBase* pControl) : m_pControl(pControl) { Create(); };
+  AsyncCallImplT(AsyncCallBase *pControl) : m_pControl(pControl) { Create(); };
 
   ~AsyncCallImplT() { Destroy(); };
 
@@ -90,39 +89,31 @@ private:
 
   void thread_proc() {
     try {
-      //приведение типа к AsyncCall_*, проблема восходящего преобразования,
-      //может возникать непроделенное поведение в runtime.
-
-      //static_cast имеет семантику move, в следствии чего будет вызван
-      //деструктор класса TheFactoryImpl, в следствии чего будут вызваны
-      //деструкторы наследуемых классов и композитных объектов, в частности
-      //деструктор AsyncCall_1, который обнулит указатель m_pOutput
-      //у обеъкта типа AsyncCall_0 такой проблемы не будет, т.к. деструктор виртуальный
-      //и  AsyncCallImplT
-      static_cast<T*>(this)->Call();
-      if (this->m_pControl) this->m_pControl->DoCall();
-    } catch (const TASK6044::Exception& excpt) {
+      static_cast<T *>(this)->Call();
+      if (this->m_pControl)
+        this->m_pControl->DoCall();
+    } catch (const TASK6044::Exception &excpt) {
       std::cerr << "TASK6044::Exception occured: " << excpt.what();
-    } catch (const std::exception& excpt) {
+    } catch (const std::exception &excpt) {
       std::cerr << "Unexpected exception: " << excpt.what();
     };
   };
 
 private:
   std::unique_ptr<std::thread> m_pThread;
-  AsyncCallBase* m_pControl;
+  AsyncCallBase *m_pControl;
 };
 
 //! Abstract output class
 class LoggerBase {
 public:
-  virtual void LogLine(const char* szOut) = 0;
+  virtual void LogLine(const char *szOut) = 0;
 };
 
 //! Async action
 class AsyncCall_1 : public AsyncCallImplT<AsyncCall_1> {
 public:
-  AsyncCall_1(LoggerBase* pOutput, AsyncCallBase* pControl)
+  AsyncCall_1(LoggerBase *pOutput, AsyncCallBase *pControl)
       : AsyncCallImplT<AsyncCall_1>(pControl) {
     m_pOutput = pOutput;
   };
@@ -138,13 +129,13 @@ public:
   };
 
 protected:
-  LoggerBase* m_pOutput;
+  LoggerBase *m_pOutput;
 };
 
 //! Async action
 class AsyncCall_0 : public AsyncCallImplT<AsyncCall_0> {
 public:
-  AsyncCall_0(LoggerBase* pOutput, AsyncCallBase* pControl)
+  AsyncCall_0(LoggerBase *pOutput, AsyncCallBase *pControl)
       : AsyncCallImplT<AsyncCall_0>(pControl) {
     m_pOutput = pOutput;
   };
@@ -160,12 +151,12 @@ public:
   };
 
 protected:
-  LoggerBase* m_pOutput;
+  LoggerBase *m_pOutput;
 };
 
 class LoggerImpl : public LoggerBase {
 public:
-  LoggerImpl(CritSec& oRM) : m_pOutput(nullptr), m_oRM(oRM) {
+  LoggerImpl(CritSec &oRM) : m_pOutput(nullptr), m_oRM(oRM) {
     m_pOutput = fopen("result.log", "w");
     TASK6044_CHK_ERRNO(m_pOutput);
   };
@@ -178,10 +169,7 @@ public:
   };
 
   // LoggerBase
-  virtual void LogLine(const char* szOut) {
-    //Деструктор класса TheFactoryImpl уже вызвал мьютекс потока,
-    //который в данный момент находится в ожидании завершения.
-    //Из за передачи CritSec по ссылке, произойдет неотслеживаемый deadlock.
+  virtual void LogLine(const char *szOut) {
     AutoCritSec arm(m_oRM);
     if (m_pOutput) {
       TASK6044_CHK_ERRNO(EOF != fputs(szOut, m_pOutput));
@@ -189,8 +177,8 @@ public:
   };
 
 protected:
-  CritSec& m_oRM;  // protects class variables
-  FILE* m_pOutput;
+  CritSec &m_oRM; // protects class variables
+  FILE *m_pOutput;
 };
 
 class TheFactoryImpl : public LoggerImpl, public AsyncCallBase {
@@ -219,20 +207,20 @@ protected:
   virtual void DoCall() { ; };
 
 protected:
-  CritSec m_oRM;  // protects class variables
+  CritSec m_oRM; // protects class variables
   std::unique_ptr<AsyncCall_1> m_pAsyncCall1;
   std::unique_ptr<AsyncCall_0> m_pAsyncCall2;
-  FILE* m_pOutput;
+  FILE *m_pOutput;
 };
-};  // namespace TASK6044
+}; // namespace TASK6044
 
 int main() {
   try {
     TASK6044::TheFactoryImpl oApp;
-  } catch (const TASK6044::Exception& excpt) {
+  } catch (const TASK6044::Exception &excpt) {
     std::cerr << "TASK6044::Exception occured: " << excpt.what();
     return 1;
-  } catch (const std::exception& excpt) {
+  } catch (const std::exception &excpt) {
     std::cerr << "Unexpected exception: " << excpt.what();
     return 3;
   };
