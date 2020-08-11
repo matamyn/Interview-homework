@@ -45,13 +45,13 @@ typedef std::recursive_mutex CritSec;
 typedef std::lock_guard<std::recursive_mutex> AutoCritSec;
 
 //! Abstract control class
-class AsyncCallBase {
+class IAsyncCallBase {
 public:
   virtual void DoCall() = 0;
 };
 
 //! Abstract output class
-class LoggerBase {
+class ILoggerBase {
 public:
   virtual void LogLine(const char *szOut) = 0;
 };
@@ -60,17 +60,19 @@ public:
     \tparam class that must support method 'void TT::Call()'
 */
 template <class T> class AsyncCallImplT {
-  AsyncCallImplT &operator=(const AsyncCallImplT &);
-  AsyncCallImplT(const AsyncCallImplT &);
-
 public:
-  AsyncCallImplT(AsyncCallBase *pControl) : m_pControl(pControl) { Create(); };
+  explicit AsyncCallImplT(IAsyncCallBase *pControl_T) : m_pControl(pControl_T) {
+    Create();
+  };
 
-  ~AsyncCallImplT() { Destroy(); };
+  ~AsyncCallImplT() {
+    Destroy();
+  };
 
 private:
   void Create() {
-    m_pThread.reset(new std::thread(&AsyncCallImplT::thread_proc, this));
+    m_pThread =
+        std::make_unique<std::thread>(&AsyncCallImplT::thread_proc, this);
   };
 
   void Destroy() {
@@ -96,49 +98,51 @@ private:
 
 private:
   std::unique_ptr<std::thread> m_pThread;
-  AsyncCallBase *m_pControl;
+  IAsyncCallBase *m_pControl;
 };
 
 //! Async action
 class AsyncCall_1 : public AsyncCallImplT<AsyncCall_1> {
+  AsyncCall_1 &operator=(const AsyncCall_1 &)=delete;
+  AsyncCall_1(const AsyncCall_1 &)=delete ;
 public:
-  AsyncCall_1(LoggerBase *pOutput, AsyncCallBase *pControl);
+  AsyncCall_1(ILoggerBase *pOutput_1, IAsyncCallBase *pControl_1);
 
-  ~AsyncCall_1();
+  virtual ~AsyncCall_1();
   virtual void Call();
 
 protected:
-  LoggerBase *m_pOutput_log_base;
+  ILoggerBase *m_pOutput_1;
 };
 
 //! Async action
 class AsyncCall_0 : public AsyncCallImplT<AsyncCall_0> {
 public:
-  AsyncCall_0(LoggerBase *pOutput, AsyncCallBase *pControl);
+  AsyncCall_0(ILoggerBase *pOutput_0, IAsyncCallBase *pControl_0);
 
   virtual ~AsyncCall_0();
 
   void Call();
 
 protected:
-  LoggerBase *m_pOutput_log_base;
+  ILoggerBase *m_pOutput_0;
 };
 
-class LoggerImpl : public LoggerBase {
+class LoggerImpl : public ILoggerBase {
 public:
-  LoggerImpl(CritSec &oRM);
+  LoggerImpl();
 
-  ~LoggerImpl();
+  virtual ~LoggerImpl();
 
-  // LoggerBase
+  // ILoggerBase
   virtual void LogLine(const char *szOut);
 
 protected:
-  CritSec &m_oRM; // protects class variables
+  CritSec m_oRM; // protects class variables
   FILE *m_pOutput;
 };
 
-class TheFactoryImpl : public LoggerImpl, public AsyncCallBase {
+class TheFactoryImpl : public LoggerImpl, public IAsyncCallBase {
 public:
   TheFactoryImpl();
 
@@ -149,12 +153,12 @@ public:
 protected:
   void Destroy();
 
-  // AsyncCallBase
+  // IAsyncCallBase
   virtual void DoCall();
 
 protected:
   CritSec m_oRM; // protects class variables
   std::unique_ptr<AsyncCall_1> m_pAsyncCall1;
-  std::unique_ptr<AsyncCall_0> m_pAsyncCall2;
+  std::unique_ptr<AsyncCall_0> m_pAsyncCall0;
 };
 }; // namespace TASK6044
