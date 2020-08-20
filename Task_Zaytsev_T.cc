@@ -9,16 +9,11 @@
 */
 
 /*
-Ошибок из-за которых программа не выполняется по сути две:
-Первая связана с особенностью static_cast из-за которого вызываются деструкторы
-наследников, которые чистят указатель на интерфейсный касс LoggerBase. Можно
-исправить убрав обнуление указателей LoggerBase *m_pOutput в деструкторе. Однако
-что тогда делать с потенциальной утечной памяти, мне непонятно. Вторая связана с
-особенностью lock_guard который теряет поток, если тот повторно вызывается через
-ссылку на уже залоченый мьютекс. Исправить можно убрав передачу CritSec по
-ссылке в LoggerImpl (соответственно изменив поле на объект)
+Ошибок из-за которых программа не выполняется по сути две: 
+Первая связана с особенностью static_cast из-за которого вызываются деструкторы наследников, которые чистят указатель на интерфейсный касс LoggerBase. Можно исправить убрав обнуление указателей LoggerBase *m_pOutput в деструкторе. Однако что тогда делать с потенциальной утечной памяти, мне непонятно.
+Вторая связана с особенностью lock_guard который теряет поток, если тот повторно вызывается через ссылку на уже залоченый мьютекс. Исправить можно убрав передачу CritSec по ссылке в LoggerImpl (соответственно изменив поле на объект)
 */
-/*ошибка*/
+
 #include <cstdio>
 #include <exception>
 #include <fstream>
@@ -79,14 +74,11 @@ template <class T> class AsyncCallImplT {
   AsyncCallImplT &operator=(const AsyncCallImplT &);
   AsyncCallImplT(const AsyncCallImplT &);
 
-  //Метод Create() будет вызван раньше завершения конструирования объекта Т, в
-  //данном случаи AsyncCall_* т.к. указатель LoggerBase *m_pOutput
-  //инициализируется в конструкторе AsyncCall_*, поведение при обращении к нему
-  //в созданном потоке метода thread_proc вызовет SIGSEGV.
+//Метод Create() будет вызван раньше завершения конструирования объекта Т, в данном случаи AsyncCall_*
+//т.к. указатель LoggerBase *m_pOutput инициализируется в конструкторе AsyncCall_*, поведение при обращении к нему
+//в созданном потоке метода thread_proc вызовет SIGSEGV.
 public:
-  AsyncCallImplT(IAsyncCallBase *pControl) : m_pControl(pControl) { /*ошибка*/
-    Create();
-  };
+  AsyncCallImplT(IAsyncCallBase *pControl) : m_pControl(pControl) { Create(); };
 
   ~AsyncCallImplT() { Destroy(); };
 
@@ -114,9 +106,8 @@ private:
       //деструкторы наследуемых классов и композитных объектов, в частности
       //деструктор AsyncCall_*, который обнулит указатель m_pOutput
       //(из AsyncCall_ на абстрактный класс)
-      //из за чего произойдет SIGSEGV на обращени к перегруженному методу
-      // LogLine в методе Call.
-      /*ошибка*/ static_cast<T *>(this)->Call();
+      //из за чего произойдет SIGSEGV на обращени к перегруженному методу LogLine в методе Call.
+      static_cast<T *>(this)->Call();
       if (this->m_pControl)
         this->m_pControl->DoCall();
     } catch (const TASK6044::Exception &excpt) {
@@ -142,11 +133,9 @@ class AsyncCall_1 : public AsyncCallImplT<AsyncCall_1> {
 public:
   AsyncCall_1(ILoggerBase *pOutput, IAsyncCallBase *pControl)
       : AsyncCallImplT<AsyncCall_1>(pControl) {
-    /*потенциальная ошибка*/ m_pOutput = pOutput;
+    m_pOutput = pOutput;
   };
-  ~AsyncCall_1() { /*ошибка*/
-    m_pOutput = nullptr;
-  };
+  ~AsyncCall_1() { m_pOutput = nullptr; };
 
   virtual void Call() {
     for (size_t i = 0; i < 100u; ++i) {
@@ -165,12 +154,10 @@ class AsyncCall_0 : public AsyncCallImplT<AsyncCall_0> {
 public:
   AsyncCall_0(ILoggerBase *pOutput, IAsyncCallBase *pControl)
       : AsyncCallImplT<AsyncCall_0>(pControl) {
-    /*потенциальная ошибка*/ m_pOutput = pOutput;
+    m_pOutput = pOutput;
   };
 
-  virtual ~AsyncCall_0() { /*ошибка*/
-    m_pOutput = nullptr;
-  };
+  virtual ~AsyncCall_0() { m_pOutput = nullptr; };
 
   void Call() {
     for (size_t i = 0; i < 1000u; ++i) {
@@ -180,7 +167,7 @@ public:
     };
   };
   // П.С.
-  // Я не смог придумать как стоит поменять указатель на *m_pOutput,
+  // Я не смог придумать как стоит поменять указатель на *m_pOutput, 
   // что-бы он не обнулся до завершения работы потока.
   // При использовании умного указателя и переносе общего поля m_pOutput из
   // AsyncCall* в AsyncCallImplT позволит избавиться от необходимости
@@ -192,7 +179,7 @@ protected:
 
 class LoggerImpl : public ILoggerBase {
 public:
-  LoggerImpl(/*ошибка*/ CritSec &oRM) : m_pOutput(nullptr), m_oRM(oRM) {
+  LoggerImpl(CritSec &oRM) : m_pOutput(nullptr), m_oRM(oRM) {
     m_pOutput = fopen("result.log", "w");
     TASK6044_CHK_ERRNO(m_pOutput);
   };
@@ -220,7 +207,7 @@ public:
   };
 
 protected:
-  CritSec /*ошибка*/ &m_oRM; // protects class variables
+  CritSec &m_oRM; // protects class variables
   FILE *m_pOutput;
 };
 
